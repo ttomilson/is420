@@ -1,3 +1,8 @@
+/*Input is a specific state. Print total income from all events as follows: Each output line should contain information of a 
+specific event ID (income from room type, income from services, total income of this event). At the end a 
+grand total of all events income. Include discounts.
+*/
+
 create or replace function roomTypeIncomeByState(resID number)
 		return number
 		AS
