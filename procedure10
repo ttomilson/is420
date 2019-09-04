@@ -1,0 +1,114 @@
+/*Change an event Date: Input the event reservation ID and change event start and end date, if there is availability
+in the same or larger room type for the new date interval*/
+
+
+create or replace function roomavailibilityCheckT (resID varchar, newEventStart date, newEventEnd date, roomType varchar)
+return number
+as 
+    roomcheck number;
+BEGIN
+
+/* use if else statement here because the count of rooms is different per roomtype. Small room type counts small, medium, and large rooms. Medium types count medium and large rooms. Large rooms count large rooms only.*/
+
+if roomType = 'Small' THEN
+
+			select count(room.r_id) into roomCheck
+			from roomres right outer join room
+			on room.r_id = roomRes.r_id
+			where r_type = 'Medium' or r_type = 'Large' or r_type ='Small'  
+			AND roomRes.res_start > newEventEnd
+			or roomRes.res_end < newEventStart
+			or roomRes.res_start is null;
+            return roomCheck;
+    end if;
+		if roomType = 'Medium' THEN
+		select count(room.r_id) into roomCheck
+			from roomres right outer join room
+			on room.r_id = roomRes.r_id
+			where r_type = 'Medium' or r_type = 'Large' 
+			AND roomRes.res_start > newEventEnd
+			or roomRes.res_end < newEventStart
+			or roomRes.res_start is null;
+
+			return roomCheck;
+    end if;
+		if roomType = 'Large' THEN	
+		select count(room.r_id) into roomCheck
+			from roomres right outer join room
+			on room.r_id = roomRes.r_id
+			where r_type = 'Large'
+			AND roomRes.res_start > newEventEnd
+			or roomRes.res_end < newEventStart
+			or roomRes.res_start is null;
+                return roomCheck;
+    end if;
+exception
+    when no_data_found then return 0;
+END;
+
+
+
+create or replace procedure changeEventDateT (newEventStart date, newEventEnd date, resID number)
+ AS
+	roomType roomres.roomtype%type;
+	roomCheckSmall number;
+       	roomCheckMedium number;
+       	roomCheckLarge number;
+	noAvailability exception;
+BEGIN
+		select roomtype into roomType
+			from roomres
+				where res_id = resID;
+
+        roomCheckSmall:= roomavailibilityCheckT (resID , newEventStart , newEventEnd , 'Small');
+        roomCheckMedium := roomavailibilityCheckT (resID , newEventStart , newEventEnd , 'Medium');
+        roomCheckLarge := roomavailibilityCheckT (resID , newEventStart , newEventEnd , 'Large');
+
+/* assigns results from functions to appropriate variable*/
+
+            if roomType = 'Small' and roomCheckSmall > 0 then
+                update reservation 
+                set res_start_date = newEventStart, res_end_date = newEventEnd
+                where res_id= resID;
+
+                update roomres 
+                set res_start = newEventStart, res_end = newEventEnd
+                where resID = res_id;
+         end if;
+         
+            if roomType = 'Medium' and roomCheckMedium > 0 then
+                update reservation 
+                set res_start_date = newEventStart, res_end_date = newEventEnd
+                where res_id= resID;
+
+                update roomres 
+                set res_start = newEventStart, res_end = newEventEnd
+                where resID = res_id;
+        end if;
+
+
+            if roomType = 'Large' and roomCheckLarge > 0 then
+                update reservation 
+                set res_start_date = newEventStart, res_end_date = newEventEnd
+                where res_id= resID;
+
+                update roomres 
+                set res_start = newEventStart, res_end = newEventEnd
+                where resID = res_id;
+        end if;
+/*if count of appropriate rooms is greater than 0, then reservation start and end date iis updated*/
+            if roomtype = 'Small' and roomCheckSmall <= 0
+                then raise noAvailability;
+        end if;
+            if roomtype = 'Medium' and roomCheckMedium <= 0
+                then raise noAvailability;
+            elsif  roomtype = 'Large' and roomCheckLarge <= 0
+                then raise noAvailability;
+     end if;
+
+	EXCEPTION
+		when noAvailability then 
+			dbms_output.put_line ('No Available rooms');
+
+END;
+
