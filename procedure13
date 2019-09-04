@@ -1,3 +1,6 @@
+/*Given a person’s name, find all events under that name.*/
+
+
 create or replace procedure showEventsByName (p_c_name IN varchar) /*inputs customer name to pull reservations associated*/
     AS 
     cursor c1 is 
