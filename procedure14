@@ -1,3 +1,7 @@
+/*Calculate and display total income from all sources of all hotels. Totals must be printed by month, 
+and for each month by event and service type. Include discounts.
+*/
+
 create or replace function serviceIncomebyType(monthStart date, monthend date, s_type varchar)
         return number
                 is
