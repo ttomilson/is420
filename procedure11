@@ -73,61 +73,7 @@ roomAvail := avalibilitycheck(p_r_type, p_start, p_end, p_ResID);
 		When zerocount then dbms_output.put_line('No rooms available of room type ' || p_r_type || ' in Hotel ' || hotel); /*if no rooms are available, the statement prior is outputted. */
 END;
 
- 
-BEFORE EXECUTION
- 
 
-AFTER EXECUTION
-exec changeRoomType (4, 'Medium', 5000);
  
  
 
-#12 (Theresa Tomilson): Given an event type (Birthday, Wedding, etc.) display all events of that type in all hotels along with the address of the hotel and the date of the event.
-
-Set serveroutput on;
-create or replace procedure showByEvent (p_event_type VARCHAR) /* user chooses input for event type in execution statement*/ AS
-cursor c1 IS
-select r.res_id, r.event_type, r.res_start_date, r.res_end_date, h.hotel_id, h.hotel_name, h.hotel_street, h.hotel_zip, h.hotel_state
-    from reservation r, hotel h
-    where r.hotel_id = h.hotel_id
-    and r.event_type = p_event_type;
-        /* the above code creates the cursor and retrieves the data that is to be displayed */
-    v_resID reservation.res_id%type;
-    v_eventType reservation.event_type%type;
-    v_res_start reservation.res_start_date%type;
-    v_res_end reservation.res_end_date%type;
-    v_hotelID hotel.hotel_id%type;
-    v_hotelName hotel.hotel_name%type;
-    v_hStreet hotel.hotel_street%type;
-    v_hState hotel.hotel_state%type;
-    v_hZip hotel.hotel_zip%type;
-    noEvents    exception;
-    cnt int;
-BEGIN
-select count(*) into cnt  from reservation r, hotel h
-    where r.hotel_id = h.hotel_id
-    and r.event_type = p_event_type;
-    if cnt=0 then
-    raise noEvents;
-    end if;
-    open c1;
-    loop  /*the cursor fetches rows that meet the where statements in the above code for as long as there is data available*/
-    fetch c1 into v_resID,v_eventType,v_res_start,v_res_end, v_hotelID, v_hotelName,v_hStreet,v_hZip, v_hState  ;
-                        /*fetches data from the cursor and inputs it into the declared variables*/
-    exit when c1%notfound;
-        dbms_output.put_line ('Reservation ID: ' || v_resID);
-        dbms_output.put_line ('Event Type: ' || v_eventType);
-        dbms_output.put_line ('Date of the Event: '|| v_res_start || ' to ' || v_res_end);
-        dbms_output.put_line ('Hotel ID: ' || v_hotelID);
-        dbms_output.put_line ('Hotel Name: ' || v_hotelName);
-        dbms_output.put_line ('Hotel Address: ' ||  v_hStreet || ' ' || v_hState || ' ' || v_hZip );
-        dbms_output.put_line ('______________________________________________');
-    
-end loop; 
-close c1;
-
-EXCEPTION
-    when noEvents then 
-        dbms_output.put_line ('No Reservations associated with ' || p_event_type);
- /*statement raised when no reservations associated with inputted event*/
-end;
