@@ -1,0 +1,161 @@
+create or replace function serviceIncomebyType(monthStart date, monthend date, s_type varchar)
+        return number
+                is
+                total_service number;
+     begin
+                select sum(total_service_price) into total_service
+                from services
+                where  service_date >= monthStart and service_date <= monthEnd
+                    and service_type = s_type;
+	/* places sum of total service price per service type into variable total_service*/
+				return total_service;
+     exception
+            when no_data_found then 
+            return 0;
+    end;
+   
+    
+    create or replace function incomebyEventType(monthStart date, monthEnd date, eventType varchar)
+        return number
+            is
+            totalofEvents number;
+        begin
+                select sum(total_price_of_room_res) into totalofEvents
+                from roomres rr,reservation r
+                where   rr.res_id = r.res_id and
+                rr.res_start >= monthStart and rr.res_end <= monthEnd and eventType = event_type;
+				/*calculates total income by event type during certain month */
+				return totalOfEvents;
+        exception
+            when no_data_found then 
+            return 0;
+    end;
+
+
+create or replace FUNCTION monthlyDiscount (monthStart date, monthEnd date)
+	return number
+	AS 
+		discountTotal number;
+BEGIN
+                select sum(discount) into discountTotal
+				from roomres	
+				where res_start >= monthStart and res_end <= monthEnd;
+				return discountTotal;
+EXCEPTION	
+			when no_data_found then 
+				return 0;
+END;
+
+
+    
+  create or replace function TotalIncomeReport (monthStart date, monthEnd date)
+        return number
+        IS 
+          eventTotal number;
+          serviceTotal number;
+          totalOfAll number;
+		  discountTotal number;
+        BEGIN
+			select sum(discount) into discountTotal
+				from roomres	
+					where res_start >= monthStart and res_end <= monthEnd;
+				
+           select sum(total_price_of_room_res) into eventTotal
+           from roomres
+            where res_start >= monthStart and res_end <= monthEnd;
+				       /*calculates total income from room reservations for the entire month and places it in the eventTotal variable*/
+					   
+					   
+           select sum(Total_service_price) into serviceTotal
+            from services s
+            where service_date >= monthStart and service_date <= monthEnd;       
+				/*calculates total income from services for entire month and places it into serviceTotal variable*/
+        
+        totalOfAll := eventTotal + serviceTotal - discountTotal; /*sets variable totalOfAll = sum of eventTotal and serviceTotal*/
+        return totalOfAll;
+    exception
+        when no_data_found then 
+        return 0;
+end;
+
+create or replace procedure displayIncomeReport (monthStart date, monthEnd date)
+    IS 
+        s_lunch   number;
+        s_breakfast   number;
+        s_dj     number;
+        s_band  number;
+        
+        e_reunion number;
+        e_meeting number;
+        e_conference number;
+        e_wedding number;
+        e_bday number;
+        e_babyShower number;
+        e_newYearsParty number;
+        discounts number;
+        totalIncome number;
+        
+        cnt number;
+        noIncome Exception;
+    BEGIN        
+        Select count(res_id)into cnt
+        from roomres
+            where res_start >= monthStart
+            and res_end <= monthEnd;
+            if cnt = 0 then
+                raise noIncome;
+            else
+        -- assigns values to variables according to service type by calling function serviceIncomebyType
+        s_lunch := serviceIncomebyType(monthStart, monthend, 'Lunch');
+        s_breakfast := serviceIncomebyType(monthStart, monthend, 'Breakfast') ;
+        s_dj := serviceIncomebyType(monthStart, monthend, 'DJ')     ;
+        s_band := serviceIncomebyType(monthStart, monthend, 'Pop Band');
+        
+        dbms_output.put_line ('Income Report for all hotels between ' || monthStart || ' and ' || monthEnd || ': ');
+        dbms_output.put_line ('_________________________________________');
+        --prints values found by function serviceIncomebyType
+        dbms_output.put_line('Monthly Income by Service Type: ');
+        dbms_output.put_line('  Lunch Service: $' || s_lunch);
+        dbms_output.put_line('  Breakfast Service: $' || s_breakfast);
+        dbms_output.put_line('  DJ Service: $' || s_dj);
+        dbms_output.put_line('  Pop Band Service: $' || s_band);
+        dbms_output.put_line('
+        ');
+        
+        
+        --assigns values to varaibles according to event type by calling function incomeByEventType
+        
+        e_reunion := incomeByEventType (monthStart, monthEnd,'REUNION');
+        e_meeting := incomeByEventType (monthStart, monthEnd,'MEETING'); 
+        e_conference := incomeByEventType (monthStart, monthEnd,'CONFERENCE') ;
+        e_wedding := incomeByEventType (monthStart, monthEnd,'WEDDING');
+        e_bday := incomeByEventType (monthStart, monthEnd,'BDAY PARTY'); 
+        e_babyShower := incomeByEventType (monthStart, monthEnd,'BABY SHOWER');
+        e_newYearsParty := incomeByEventType (monthStart, monthEnd,'NEW YEAR PARTY');
+        discounts := monthlydiscount(monthStart, monthEnd);
+        --PRINTS OUTPUT FROM FUNCTIONS
+        dbms_output.put_line('Monthly Income by Event Type:');
+        dbms_output.put_line('  Reunion:$ ' || e_reunion);
+        dbms_output.put_line('  Meeting:$ ' || e_meeting);
+        dbms_output.put_line('  Conference:$ ' || e_conference);
+        dbms_output.put_line('  Wedding:$ ' || e_wedding);
+        dbms_output.put_line('  Birthday Party:$ ' || e_bday);
+        dbms_output.put_line('  Baby Shower:$ ' || e_babyShower);
+        dbms_output.put_line('  New Years Party:$ ' || e_newYearsParty);
+        dbms_output.put_line('  Discounts Applied: -$' || discounts);
+        
+        
+        dbms_output.put_line ('_________________________________________');
+        
+        --assigning result from function totalincomereport to variable totalIncome
+        totalIncome := TotalIncomeReport (monthStart, monthEnd);
+        
+        -- prints total income of given month. 
+        dbms_output.put_line ('Total Income between ' || monthStart || ' and ' || monthEnd || ' :$ ' || totalIncome);
+    end if;
+    EXCEPTION
+        when noIncome then 
+            dbms_output.put_line ('No Income between ' || monthStart || ' and ' || monthEnd);
+
+END;
+
