@@ -1,3 +1,6 @@
+/*Given an event type (Birthday, Wedding, etc.) display all events of that type in all hotels
+along with the address of the hotel and the date of the event.*/
+
 Set serveroutput on;
 create or replace procedure showByEvent (p_event_type VARCHAR) /* user chooses input for event type in execution statement*/ AS
 cursor c1 IS
