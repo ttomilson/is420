@@ -1,0 +1,40 @@
+create or replace procedure showEventsByName (p_c_name IN varchar) /*inputs customer name to pull reservations associated*/
+    AS 
+    cursor c1 is 
+        select r.res_id  from reservation r, customer c 
+            where r.c_id = c.c_id
+            AND c.c_name = p_c_name;
+			
+		res_type reservation.res_id%type; 
+		cnt number;
+		noReservations exception;
+
+        /*selects reservation ids where customer id from reservation = customer id from customer and where customer name = input customer name*/
+
+    BEGIN
+        select count(r.res_id) into cnt
+            from reservation r
+               where c_id IN (select c_id from customer where c_name = p_c_name);
+            
+		if cnt = 0 
+          		then raise noReservations;
+
+	else
+		open c1;
+            		dbms_output.put_line ('Name: ' || p_c_name); 
+
+/*placed before loop so that name isn't repeated every loop*/
+		loop 			/*c1 fetches until no data left */
+			fetch c1 into res_type;
+ 	/*fetches select statement in header into res_type variable*/
+			exit when c1%notfound; /*exits fetch when c1 is not found*/
+                   dbms_output.put_line('Reservation ID: ' || res_type); /*prints cursor  */      
+            end loop; 
+	close c1;
+	end if;
+exception
+	when noReservations then 
+            dbms_output.put_line('No reservations found for ' || p_c_name); /* if a name does not have any reservations attached to it, exception is raised*/
+   
+	end;
+
