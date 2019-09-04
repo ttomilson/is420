@@ -1,3 +1,5 @@
+/*Input the reservation ID and change reservation room type if there is availability for 
+the new room type during the reservation’s date interval.*/
 
 create or replace function avalibilitycheck
  (p_r_type in varchar, p_start in date, p_end in date, resID number)
